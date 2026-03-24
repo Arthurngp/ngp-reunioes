@@ -1,6 +1,9 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { BlocoGestores as TBlocoGestores } from '@/types'
+import { MetricLabels } from '@/types'
+import { getMetricLabels, saveMetricLabels } from '@/lib/storage'
 import MetricasGrid from './MetricasGrid'
 import ListaEditavel from './ListaEditavel'
 
@@ -24,9 +27,21 @@ const textareaStyle: React.CSSProperties = {
 }
 
 export default function BlocoGestores({ dados, onChange, readOnly = false }: Props) {
+  const [metricLabels, setMetricLabels] = useState<MetricLabels>(getMetricLabels())
+
+  useEffect(() => {
+    setMetricLabels(getMetricLabels())
+  }, [])
+
   function updateCampo(campo: keyof TBlocoGestores, valor: string | string[]) {
     onChange?.({ ...dados, [campo]: valor })
   }
+
+  function handleChangeLabels(labels: MetricLabels) {
+    setMetricLabels(labels)
+    saveMetricLabels(labels)
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div>
@@ -36,7 +51,9 @@ export default function BlocoGestores({ dados, onChange, readOnly = false }: Pro
           leads_meta={dados.leads_meta} leads_google={dados.leads_google}
           cpl_meta={dados.cpl_meta} cpl_google={dados.cpl_google}
           roas={dados.roas}
+          labels={metricLabels}
           onChange={readOnly ? undefined : (campo, valor) => updateCampo(campo as keyof TBlocoGestores, valor)}
+          onChangeLabels={readOnly ? undefined : handleChangeLabels}
           readOnly={readOnly}
         />
       </div>

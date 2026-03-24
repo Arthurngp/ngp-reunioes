@@ -12,6 +12,7 @@ export default function Dashboard() {
   const router = useRouter()
   const slugAtual = getSlugSemanaAtual()
   const [clientes, setClientes] = useState<string[]>([])
+  const [semanas, setSemanas] = useState<string[]>([])
   const [showManager, setShowManager] = useState(false)
   const [showNovoRelatorio, setShowNovoRelatorio] = useState(false)
   const [dataNovoRelatorio, setDataNovoRelatorio] = useState(slugAtual)
@@ -20,11 +21,13 @@ export default function Dashboard() {
 
   useEffect(() => {
     setClientes(getClientes())
+    setSemanas(getSemanas())
     criarSemana(slugAtual)
   }, [slugAtual])
 
   function handleUpdate() {
     setClientes(getClientes())
+    setSemanas(getSemanas())
     setTick(n => n + 1)
   }
 
@@ -35,15 +38,16 @@ export default function Dashboard() {
     router.push(`/semana/${slug}`)
   }
 
-  const semanas = getSemanas()
   const total = clientes.length
   const completos = clientes.filter(c => calcularStatus(getDadosCliente(slugAtual, c)) === 'completo').length
   const parciais = clientes.filter(c => calcularStatus(getDadosCliente(slugAtual, c)) === 'parcial').length
   const progresso = total > 0 ? Math.round(((completos + parciais * 0.5) / total) * 100) : 0
 
+  const semanasAnteriores = semanas.filter(s => s !== slugAtual)
+
   return (
     <div>
-      {/* Header */}
+      {/* Header — semana atual */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <div>
@@ -102,65 +106,93 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Grid clientes */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))',
-        gap: 10, marginBottom: 32,
-      }}>
-        {clientes.map(cliente => {
-          const status = calcularStatus(getDadosCliente(slugAtual, cliente))
-          return (
-            <Link key={cliente} href={`/semana/${slugAtual}#${encodeURIComponent(cliente)}`} style={{
-              background: 'var(--bg-card)', border: '1px solid var(--border)',
-              borderRadius: 12, padding: '12px 14px', textDecoration: 'none',
-              transition: 'all 0.15s', display: 'block',
-            }}
-              onMouseOver={e => { e.currentTarget.style.borderColor = status === 'completo' ? '#e63030' : '#333'; e.currentTarget.style.background = 'var(--bg-card-hover)' }}
-              onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-card)' }}
-            >
-              <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {cliente}
-              </div>
-              <StatusBadge status={status} />
-            </Link>
-          )
-        })}
-      </div>
+      {/* Dots de status da semana atual */}
+      {clientes.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 28 }}>
+          {clientes.map(cliente => {
+            const status = calcularStatus(getDadosCliente(slugAtual, cliente))
+            return (
+              <Link
+                key={cliente}
+                href={`/semana/${slugAtual}#${encodeURIComponent(cliente)}`}
+                title={`${cliente}: ${status}`}
+                style={{
+                  width: 10, height: 10, borderRadius: '50%', display: 'inline-block',
+                  background: status === 'completo' ? 'var(--red)' : status === 'parcial' ? 'rgba(230,48,48,0.35)' : '#2a2a2a',
+                  boxShadow: status === 'completo' ? '0 0 5px var(--red-glow)' : 'none',
+                  transition: 'transform 0.1s',
+                }}
+                onMouseOver={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.4)' }}
+                onMouseOut={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)' }}
+              />
+            )
+          })}
+        </div>
+      )}
 
-      {/* Relatórios anteriores */}
-      {semanas.filter(s => s !== slugAtual).length > 0 && (
+      {/* Histórico de reuniões */}
+      {semanasAnteriores.length > 0 && (
         <div>
-          <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
-            Relatórios anteriores
+          <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+            Reuniões anteriores
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {semanas.filter(s => s !== slugAtual).slice(0, 5).map(s => (
-              <Link key={s} href={`/semana/${s}`} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: 'var(--bg-card)', border: '1px solid var(--border)',
-                borderRadius: 10, padding: '12px 16px', textDecoration: 'none',
-                transition: 'all 0.15s',
-              }}
-                onMouseOver={e => { e.currentTarget.style.borderColor = '#333' }}
-                onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border)' }}
-              >
-                <div>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-                    Semana de {slugParaDataFormatada(s)}
-                  </span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 8 }}>
-                    {getClientes().filter(c => calcularStatus(getDadosCliente(s, c)) === 'completo').length}/{total} completos
-                  </span>
-                </div>
-                <span style={{ color: 'var(--red)', fontSize: 12 }}>Ver →</span>
-              </Link>
-            ))}
-            {semanas.length > 6 && (
-              <Link href="/historico" style={{ textAlign: 'center', color: 'var(--red)', fontSize: 13, padding: '8px', textDecoration: 'none' }}>
-                Ver todo o histórico →
-              </Link>
-            )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {semanasAnteriores.map(slug => {
+              const c = clientes.filter(cli => calcularStatus(getDadosCliente(slug, cli)) === 'completo').length
+              const p = clientes.filter(cli => calcularStatus(getDadosCliente(slug, cli)) === 'parcial').length
+              const prog = total > 0 ? Math.round(((c + p * 0.5) / total) * 100) : 0
+              return (
+                <Link key={slug} href={`/semana/${slug}`} style={{
+                  display: 'block', background: 'var(--bg-card)',
+                  border: '1px solid var(--border)', borderRadius: 12,
+                  padding: '16px 20px', textDecoration: 'none', transition: 'all 0.15s',
+                }}
+                  onMouseOver={e => { e.currentTarget.style.borderColor = '#2a2a2a'; e.currentTarget.style.background = 'var(--bg-card-hover)' }}
+                  onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-card)' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                    <div>
+                      <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', margin: 0 }}>
+                        Semana de {slugParaDataFormatada(slug)}
+                      </p>
+                      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
+                        {c} completos · {p} parciais · {total - c - p} vazios
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 80, height: 2, background: '#1e1e1e', borderRadius: 2, overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%', background: 'var(--red)', borderRadius: 2,
+                          width: `${prog}%`,
+                          boxShadow: prog > 0 ? '0 0 6px var(--red-glow)' : 'none',
+                        }} />
+                      </div>
+                      <span style={{ fontSize: 12, color: 'var(--red)' }}>Ver →</span>
+                    </div>
+                  </div>
+                  {/* Dots dos clientes */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 10 }}>
+                    {clientes.map(cliente => {
+                      const status = calcularStatus(getDadosCliente(slug, cliente))
+                      return (
+                        <span key={cliente} title={`${cliente}: ${status}`} style={{
+                          width: 8, height: 8, borderRadius: '50%', display: 'inline-block',
+                          background: status === 'completo' ? 'var(--red)' : status === 'parcial' ? 'rgba(230,48,48,0.35)' : '#2a2a2a',
+                          boxShadow: status === 'completo' ? '0 0 4px var(--red-glow)' : 'none',
+                        }} />
+                      )
+                    })}
+                  </div>
+                </Link>
+              )
+            })}
           </div>
+        </div>
+      )}
+
+      {semanasAnteriores.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+          Nenhuma reunião anterior registrada.
         </div>
       )}
 

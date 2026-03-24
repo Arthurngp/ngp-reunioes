@@ -26,11 +26,26 @@ export interface DadosSemana {
   [cliente: string]: DadosCliente
 }
 
+export interface MetricLabels {
+  label1: string
+  label2: string
+  label3: string
+  label4: string
+}
+
+export const DEFAULT_METRIC_LABELS: MetricLabels = {
+  label1: 'Investimento',
+  label2: 'Leads/Vendas',
+  label3: 'CPL/CPA',
+  label4: 'ROAS/ROI',
+}
+
 export interface StorageData {
   clientes: string[]
   semanas: {
     [slug: string]: DadosSemana
   }
+  metricLabels?: MetricLabels
 }
 
 export type StatusPreenchimento = 'completo' | 'parcial' | 'vazio'

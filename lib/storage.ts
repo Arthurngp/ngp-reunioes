@@ -1,4 +1,4 @@
-import { StorageData, DadosCliente, BlocoEquipe, BlocoGestores } from '@/types'
+import { StorageData, DadosCliente, BlocoEquipe, BlocoGestores, MetricLabels, DEFAULT_METRIC_LABELS } from '@/types'
 import { CLIENTES_INICIAIS } from './utils'
 
 const STORAGE_KEY = 'ngp_reunioes'
@@ -83,6 +83,17 @@ export function saveGestores(slug: string, cliente: string, gestores: BlocoGesto
   const dados = getDadosCliente(slug, cliente)
   dados.gestores = gestores
   saveDadosCliente(slug, cliente, dados)
+}
+
+export function getMetricLabels(): MetricLabels {
+  const data = loadStorage()
+  return data.metricLabels ?? DEFAULT_METRIC_LABELS
+}
+
+export function saveMetricLabels(labels: MetricLabels): void {
+  const data = loadStorage()
+  data.metricLabels = labels
+  saveStorage(data)
 }
 
 export function criarSemana(slug: string): void {
